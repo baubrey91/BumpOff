@@ -108,6 +108,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             score = score + 1
 
+            if difficulty > 250 { difficulty = 15 }
             difficulty = difficulty * 1.5
             //difficulty = difficulty * -1
             let delay = 0.5 * Double(NSEC_PER_SEC)
