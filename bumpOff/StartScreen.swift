@@ -38,6 +38,12 @@ class StartScreen: UIViewController {
         }
     }
     
+    override func viewWillDisappear(animated: Bool)
+    {
+        super.viewWillDisappear(animated)
+        self.navigationController?.navigationBarHidden = true
+    }
+    
 }
 
 class gameStart{
