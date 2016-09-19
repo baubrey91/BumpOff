@@ -13,17 +13,20 @@ import CoreMotion
 class GameScene: SKScene, SKPhysicsContactDelegate{
     
     let manager = CMMotionManager()
-    let blue = UIColor.blueColor()
-    let red = UIColor.redColor()
+    let blue = UIColor.blue
+    let red = UIColor.red
+    let lrBit : UInt32 = 50
+    
     var player = SKSpriteNode()
     var gear = SKSpriteNode()
     var home = SKSpriteNode()
     var continuePlaying = SKSpriteNode()
-
+    var lr = SKSpriteNode()
+    
     var disolveEnd = false
     var scoreLabel: SKLabelNode!
     var difficulty:CGFloat = 15
-    var timer = NSTimer()
+    var timer = Timer()
     var gameSettings = gameStart()
     var level = ""
     
@@ -33,52 +36,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         }
     }
     
-    override func didMoveToView(view: SKView) {
+    override func didMove(to view: SKView) {
         
         self.physicsWorld.contactDelegate = self
         
-        gear = self.childNodeWithName("Gear") as! SKSpriteNode
-        home = self.childNodeWithName("Home") as! SKSpriteNode
-        continuePlaying = self.childNodeWithName("Continue") as! SKSpriteNode
+        gear = self.childNode(withName: "Gear") as! SKSpriteNode
+        home = self.childNode(withName: "Home") as! SKSpriteNode
+        continuePlaying = self.childNode(withName: "Continue") as! SKSpriteNode
 
-        home.hidden = true
-        continuePlaying.hidden = true
+        home.isHidden = true
+        continuePlaying.isHidden = true
         
-        self.backgroundColor = UIColor.greenColor()
+        createLR()
         
-        player = self.childNodeWithName("player") as! SKSpriteNode
+        self.backgroundColor = UIColor.green
+        
+        player = self.childNode(withName: "player") as! SKSpriteNode
 
         scoreLabel = SKLabelNode(fontNamed: "Chalkduster")
         scoreLabel.text = "Score: 0"
-        scoreLabel.horizontalAlignmentMode = .Right
+        scoreLabel.horizontalAlignmentMode = .right
         scoreLabel.position = CGPoint(x: 250, y: 150)
-        scoreLabel.color = UIColor.blackColor()
+        scoreLabel.fontColor = UIColor.black
         addChild(scoreLabel)
         
         manager.startAccelerometerUpdates()
         manager.accelerometerUpdateInterval = 0.1
-        manager.startAccelerometerUpdatesToQueue(NSOperationQueue.mainQueue()){
+        manager.startAccelerometerUpdates(to: OperationQueue.main){
             (data, error) in
             
-            self.physicsWorld.gravity = CGVectorMake(CGFloat((data?.acceleration.y)!) * self.difficulty, CGFloat((data?.acceleration.x)!) * -self.difficulty)
+            self.physicsWorld.gravity = CGVector(dx: CGFloat((data?.acceleration.y)!) * self.difficulty, dy: CGFloat((data?.acceleration.x)!) * -self.difficulty)
         }
         
     }
     
-    func didBeginContact(contact: SKPhysicsContact) {
+    func didBegin(_ contact: SKPhysicsContact) {
+        
         var wall: SKSpriteNode
-        //var player : SKSpriteNode
-        if (contact.bodyA.node?.name == "LR" || contact.bodyB.node?.name == "LR"){
+        if (contact.bodyA.collisionBitMask == lrBit || contact.bodyB.collisionBitMask == lrBit){
             self.difficulty =  self.difficulty * -1
-            self.backgroundColor = UIColor.purpleColor()
-            let lr = ((contact.bodyA.node?.name == "LR") ? contact.bodyA.node : contact.bodyB.node) as! SKSpriteNode
+            self.backgroundColor = UIColor.purple
+            let lr = ((contact.bodyA.collisionBitMask == lrBit) ? contact.bodyA.node : contact.bodyB.node) as! SKSpriteNode
             lr.removeFromParent()
-            let delay = 5 * Double(NSEC_PER_SEC)
-            let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
-            dispatch_after(time, dispatch_get_main_queue()) {
+            let delayRun = 5 * Double(NSEC_PER_SEC)
+            let timeRun = DispatchTime.now() + Double(Int64(delayRun)) / Double(NSEC_PER_SEC)
+            DispatchQueue.main.asyncAfter(deadline: timeRun) {
                 self.difficulty = self.difficulty * -1
-                self.backgroundColor = UIColor.greenColor()
+                self.backgroundColor = UIColor.green
             }
+
+            self.createLR()
             
         }
         else {
@@ -89,15 +96,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             else {
                 wall = contact.bodyB.node as! SKSpriteNode
                 player = contact.bodyA.node as! SKSpriteNode
-
-
             }
-        /*if contact.bodyA.node?.name == "Wall"{
-            let wall = contact.bodyA.node as! SKSpriteNode
-        }
-        else {
-            let wall = contact.bodyB.node as! SKSpriteNode
-        }*/
+
             var levelComplete = true
             if gameSettings.dissolve == true{
                 
@@ -106,18 +106,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
                     player.yScale = player.yScale * 0.95
                 }
                 else {
-                    home.hidden = false
-                    continuePlaying.hidden = false
+                    home.isHidden = false
+                    continuePlaying.isHidden = false
                     disolveEnd = true
-                    self.scene!.paused = true
-                    
-                    
+                    self.scene!.isPaused = true
                 }
             }
             wall.color = (wall.color != blue) ? blue : red
             
        
-        enumerateChildNodesWithName("Wall") {
+        enumerateChildNodes(withName: "Wall") {
             node, stop in
             let wall = node as! SKSpriteNode
             if (wall.color != self.blue){
@@ -132,10 +130,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             difficulty = difficulty * 1.5
             //difficulty = difficulty * -1
             let delay = 0.5 * Double(NSEC_PER_SEC)
-            let time = dispatch_time(DISPATCH_TIME_NOW, Int64(delay))
-            dispatch_after(time, dispatch_get_main_queue()) {
+            let time = DispatchTime.now() + Double(Int64(delay)) / Double(NSEC_PER_SEC)
+            DispatchQueue.main.asyncAfter(deadline: time) {
 
-                self.enumerateChildNodesWithName("Wall") {
+                self.enumerateChildNodes(withName: "Wall") {
                     node, stop in
                     let wall = node as! SKSpriteNode
                     wall.color = self.red
@@ -145,43 +143,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         }
     }
     
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         let touch = touches.first!
         
-        if (home.containsPoint(touch.locationInNode(self)) && home.hidden == false) {
+        if (home.contains(touch.location(in: self)) && home.isHidden == false) {
             let storyboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
-            let vc = storyboard.instantiateViewControllerWithIdentifier("StartScreen") as! StartScreen
-            let appDelegate = (UIApplication.sharedApplication().delegate as! AppDelegate)
+            let vc = storyboard.instantiateViewController(withIdentifier: "StartScreen") as! StartScreen
+            let appDelegate = (UIApplication.shared.delegate as! AppDelegate)
             appDelegate.window?.rootViewController = vc
         }
-        if continuePlaying.containsPoint(touch.locationInNode(self)) {
-            home.hidden = true
-            continuePlaying.hidden = true
-            self.scene!.paused = false
+        if continuePlaying.contains(touch.location(in: self)) {
+            home.isHidden = true
+            continuePlaying.isHidden = true
+            self.scene!.isPaused = false
         }
-        if (continuePlaying.containsPoint(touch.locationInNode(self)) && disolveEnd){
-            home.hidden = true
-            continuePlaying.hidden = true
+        if (continuePlaying.contains(touch.location(in: self)) && disolveEnd){
+            home.isHidden = true
+            continuePlaying.isHidden = true
             score = 0
             player.xScale = player.xScale * 3
             player.yScale = player.yScale * 3
             player.position.x = 300
             player.position.y = 300
-            self.scene!.paused = false
+            self.scene!.isPaused = false
 
             
         }
-        else if gear.containsPoint(touch.locationInNode(self)) {
-            home.hidden = false
-            continuePlaying.hidden = false
+        else if gear.contains(touch.location(in: self)) {
             
-            self.scene!.paused = true
-            //self.scene!.view!.paused = true
+            home.isHidden = false
+            continuePlaying.isHidden = false
+            
+            self.scene!.isPaused = true
 
         }
     }
     
-    override func update(currentTime: CFTimeInterval) {
+    func createLR(){
+        let delayReappear = 20 * Double(NSEC_PER_SEC)
+        let timeReappear = DispatchTime.now() + Double(Int64(delayReappear)) / Double(NSEC_PER_SEC)
+        DispatchQueue.main.asyncAfter(deadline: timeReappear) {
+            
+            let xRan = CGFloat(arc4random_uniform(100))
+            let yRan = CGFloat(arc4random_uniform(100))
+            
+            let lr = SKSpriteNode(imageNamed: "LeftRight")
+            
+            lr.size.height = 200
+            lr.size.width = 200
+            lr.physicsBody = SKPhysicsBody(rectangleOf: lr.frame.size)
+            lr.physicsBody!.isDynamic = false
+            lr.physicsBody?.collisionBitMask = self.lrBit
+            
+            var xPos = ((self.scene?.size.width)!/2 - 50)
+            let xPosInt = Int(xPos)
+            xPos = CGFloat(xPosInt)
+            let yPos = ((self.scene?.size.height)!/2 - 50)
+            
+            lr.position = CGPoint(x: xPos + xRan, y: yPos + yRan)
+            
+            self.addChild(lr)
+        }
+    }
+    
+    override func update(_ currentTime: TimeInterval) {
         /* Called before each frame is rendered */
     }
 }

@@ -9,7 +9,7 @@
 import Foundation
 import UIKit
 
-class StartScreen: UIViewController {
+class StartScreen: UIViewController, UIPopoverPresentationControllerDelegate {
     
     @IBOutlet weak var levelSegment: UISegmentedControl!
     @IBOutlet weak var dissolveSwitch: UISwitch!
@@ -22,26 +22,52 @@ class StartScreen: UIViewController {
         
     }
     
-    @IBAction func marathonSwitch(sender: AnyObject) {
-        levelSegment.enabled = marathonSwitch.on ? true : false
+    @IBAction func marathonSwitch(_ sender: AnyObject) {
+        levelSegment.isEnabled = marathonSwitch.isOn ? true : false
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "startSegue"{
-            gameSettings.dissolve = dissolveSwitch.on
-            gameSettings.marathon = marathonSwitch.on
-            gameSettings.layers = layersSwitch.on
+            gameSettings.dissolve = dissolveSwitch.isOn
+            gameSettings.marathon = marathonSwitch.isOn
+            gameSettings.layers = layersSwitch.isOn
             gameSettings.level = levelSegment.selectedSegmentIndex
             
-            let gameVC = segue.destinationViewController as! GameViewController
+            let gameVC = segue.destination as! GameViewController
             gameVC.gameSettings = self.gameSettings
+        }
+        
+        if segue.identifier == "howTo" {
+            let popoverViewController = segue.destination 
+            popoverViewController.modalPresentationStyle = UIModalPresentationStyle.popover
+            popoverViewController.popoverPresentationController!.delegate = self
+        }
+        
+        if segue.identifier == "disolve" {
+            let popoverViewController = segue.destination
+            popoverViewController.modalPresentationStyle = UIModalPresentationStyle.popover
+            popoverViewController.popoverPresentationController!.delegate = self
         }
     }
     
-    override func viewWillDisappear(animated: Bool)
+    override func viewWillDisappear(_ animated: Bool)
     {
         super.viewWillDisappear(animated)
-        self.navigationController?.navigationBarHidden = true
+        self.navigationController?.isNavigationBarHidden = true
+    }
+    
+    @IBAction func howToPlay(_ sender: AnyObject) {
+        
+        self.performSegue(withIdentifier: "howTo", sender: self)
+    }
+    
+    @IBAction func disolveButton(_ sender: AnyObject) {
+                self.performSegue(withIdentifier: "disolve", sender: self)
+    }
+    
+    
+    func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle {
+        return UIModalPresentationStyle.none
     }
     
 }
