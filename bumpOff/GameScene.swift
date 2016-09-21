@@ -39,7 +39,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     override func didMove(to view: SKView) {
         
         self.physicsWorld.contactDelegate = self
-        
+        UIApplication.shared.isIdleTimerDisabled = true
+
         gear = self.childNode(withName: "Gear") as! SKSpriteNode
         home = self.childNode(withName: "Home") as! SKSpriteNode
         continuePlaying = self.childNode(withName: "Continue") as! SKSpriteNode
@@ -126,7 +127,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             score = score + 1
 
-            if difficulty > 250 { difficulty = 15 }
+            if difficulty > 200 { difficulty = 15 }
             difficulty = difficulty * 1.5
             //difficulty = difficulty * -1
             let delay = 0.5 * Double(NSEC_PER_SEC)
